@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<style type="text/css">
+		html, body {
+		height: 100%;
+		margin: 0;
+		font-size: 30px;
+		padding-left: 5px;
+		}
+		#map {
+		height: 70%;
+		}
+	</style>
+	</head>
+
+	<body>
+		<form name="ChoseAssessForm" id="prop_form" action="http://webapps.nyc.gov:8084/CICS/fin1/find001i" method="post" onsubmit="return check_prop(this);">
+			<input type="hidden" name="FFUNC" value="C">
+			<select name="FBORO" id="boro">
+				<option value="1" selected="">1 Manhattan</option>
+				<option value="2">2 Bronx</option>
+				<option value="3">3 Brooklyn</option>
+				<option value="4">4 Queens</option>
+				<option value="5">5 Staten Island</option>
+			</select><br>
+			<input type="text" size="5" maxlength="5" id="block" name="FBLOCK" value="" placeholder="block"><br>
+			<input type="text" size="4" maxlength="4" id="lot" name="FLOT" value="" placeholder="lot"><br>
+
+			<label>webgoat<input id="check_webgoat" type="checkbox"></label>
+			<label>buildings<input id="check_buildings" type="checkbox"></label>
+			<label>property<input type="checkbox" name="terms"></label>
+			<br>
+			<label>gmaps<input type="checkbox" id="check_gmaps" checked="checked"></label>
+			<label>bing maps<input type="checkbox" id="check_bmaps"></label>
+			<label>taxmap<input id="check_tax" type="checkbox"></label>
+			<div onclick="opentabs(), pantobbl();">
+				<input type="submit" value="View">
+			</div>
+		</form>
+		<br>
+	<div id="map"></div>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+	<script>
+
+	function pad(num, size) {
+		var s = num+"";
+		while (s.length < size) s = "0" + s;
+			return s;
+		};	
+				
+	function opensite(site_name, check_name){
+	var checkbox = document.getElementById(check_name).checked;
+	if(checkbox == true){
+		window.open(site_name, '_blank')
+	}else{
+		return false;
+	}};
+
+
+	function opentabs() {
+		var b = document.getElementById("boro");
+		var boro = b.options[b.selectedIndex].value;
+		var block = document.getElementById("block").value;
+		var lot = document.getElementById("lot").value;
+		bbl = boro + pad(block, 5) + pad(lot, 4)
+		$.getJSON('http://64.137.209.199/location/'+ bbl, function(data) {
+			var taxmap = "http://gis.nyc.gov/taxmap/map.htm?searchType=BblSearch&featureTypeName=EVERY_BBL&featureName="+ bbl
+			var webgoat = "http://a030-goat.nyc.gov/goat/bl.aspx?boro="+ boro +"&block_num="+ block +"&lot_num=" + lot
+			var buildings = "http://a810-bisweb.nyc.gov/bisweb/PropertyProfileOverviewServlet?boro="+ boro +"&block="+ block +"&lot=" + lot
+			var bing = "http://bing.com/maps/default.aspx?where1=" + data['lat'] + "," + data['lng']
+			opensite(bing,'check_bmaps')
+			opensite(taxmap,'check_tax')
+			opensite(webgoat,'check_webgoat')
+			opensite(buildings,'check_buildings')
+		})
+	}
+
+	function check_prop(form){
+		if(!form.terms.checked) {
+			form.terms.focus();
+			return false;
+		}
+		document.getElementById("prop_form").setAttribute("target","_blank");
+		return true;
+		}	
+
+	function initMap() {
+		var myLatLng = {lat: 40.708364, lng: -74.010488};
+		map = new google.maps.Map(document.getElementById('map'), {
+		center: myLatLng,
+		zoom: 18,
+		mapTypeId: google.maps.MapTypeId.SATELLITE
+		}),
+		marker = new google.maps.Marker( {position: myLatLng, map: map}),
+		map.setTilt(45);
+		}
+
+	function pantobbl() {
+		var checkbox = document.getElementById('check_gmaps').checked;
+		if(checkbox == true){
+			$.getJSON('localhost:5000/location/'+ bbl, function(data) {
+			latLng = new google.maps.LatLng(data['lat'], data['lng']); 
+			console.log(data['lat'], data['lng'])
+			marker.setPosition(latLng);
+			marker.setMap(map);
+			map.setZoom(22);
+			map.panTo(latLng);
+		})}else{
+			return false;
+	}}
+
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?callback=initMap"></script>
+	</body>
+</html>
